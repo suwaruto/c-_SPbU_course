@@ -1,5 +1,6 @@
 GXX = g++
 SRC = main.cpp
+CXXFLAGS = 
 
 prog.out: $(SRC)
-	$(GXX) -o $@ $?
+	$(GXX) $(CXXFLAGS) -o $@ $?

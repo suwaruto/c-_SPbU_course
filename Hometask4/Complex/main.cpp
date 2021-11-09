@@ -1,4 +1,3 @@
-#include <cstdlib> //EXIT_SUCCESS
 #include <iostream>
 
 #include "complex.h"

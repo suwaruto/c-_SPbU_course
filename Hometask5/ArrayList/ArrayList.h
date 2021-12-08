@@ -3,7 +3,7 @@
 #include <ostream>
 #include <cstddef>
 
-template <typename T>
+template <typename T> //T must not allocate memory in heap, leaks are inevitable
 class ArrayList
 {
     public:

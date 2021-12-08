@@ -10,7 +10,7 @@ template <typename T>
 class Node
 {
     private:
-        T data;
+        T *data;
         Node *next;
         
         Node(const T& data, Node *next = NULL);

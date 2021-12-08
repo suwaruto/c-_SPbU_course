@@ -4,19 +4,23 @@
 template <typename T>
 Node<T>::Node( const T& data, Node<T> *next )
 {
-    this->data = data;
+    this->data = new T;
+    *(this->data) = data;
     this->next = next;
 }
 
 template <typename T>
 Node<T>::~Node()
 {
+    delete data;
 }
 
 template <typename T>
 Node<T>& Node<T>::operator=( const Node<T>& n )
 {
-    this->data = n.data;
+    delete data;
+    data = new T;
+    *data = *(n.data);
 }
 
 template <typename T>
@@ -33,13 +37,13 @@ LinkedList<T>::LinkedList( const LinkedList<T>& l )
         return;
     }
 
-    head = new Node<T>(l.head->data);
+    head = new Node<T>(*(l.head->data));
     tail = head;
     length = 1;
     
     for (Node<T> *ptr = l.head->next; ptr != NULL; ptr = ptr->next)
     {
-        tail->next = new Node<T>(ptr->data);
+        tail->next = new Node<T>(*(ptr->data));
         tail = tail->next; 
         length++;
     } 
@@ -104,7 +108,7 @@ bool LinkedList<T>::operator==( const LinkedList<T>& l ) const
 
     while (ptr1 != NULL)
     {
-        if (ptr1->data != ptr2->data)
+        if (*(ptr1->data) != *(ptr2->data))
         {
             return false;
         }
@@ -170,7 +174,7 @@ T& LinkedList<T>::operator[]( std::size_t index )
         resptr = resptr->next;
     }
 
-    return resptr->data;
+    return *(resptr->data);
 }
 
 template <typename T>
@@ -234,7 +238,7 @@ T LinkedList<T>::extract_head()
     }
 
     Node<T> *ptr = head->next;
-    T data = head->data;
+    T data = *(head->data);
     delete head;
     length--;
     head = ptr;
@@ -258,10 +262,11 @@ T LinkedList<T>::extract_tail()
     {
         ptr = ptr->next;
     }
-    T data = ptr->next->data;
+    T data = *(ptr->next->data);
     delete ptr->next;
     length--;
     tail = ptr;
+    tail->next = NULL;
     return data;
 }
 
@@ -293,7 +298,7 @@ T LinkedList<T>::extract_ind( std::size_t index )
     }
 
     prev->next = cur->next;
-    T data = cur->data;
+    T data = *(cur->data);
     delete cur;
     length--;
     return data;
@@ -311,9 +316,9 @@ std::ostream& operator<<( std::ostream& stream, const LinkedList<T>& l )
     stream << "[ ";
     for (Node<T> *ptr = l.head; ptr != l.tail; ptr = ptr->next)
     {
-        stream << ptr->data << ", ";
+        stream << *(ptr->data) << ", ";
     }
-    stream << l.tail->data << " ]";
+    stream << *(l.tail->data) << " ]";
 
     return stream;
 }

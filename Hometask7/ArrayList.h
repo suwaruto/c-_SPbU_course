@@ -1,17 +1,68 @@
-#include <cstdlib>
-#include <cstring> //memcpy
-#include <ostream>
+#pragma once
 
-#include "ArrayList.h"
+#include <ostream>
+#include <cstdlib>
+
+template <typename T> 
+class ArrayList
+{
+    public:
+        ArrayList();
+        ArrayList( std::size_t capacity ); 
+        ArrayList( const ArrayList& l );
+        ~ArrayList();
+        ArrayList& operator=( const ArrayList& );
+        bool operator==( const ArrayList& ) const;
+        void push_forward( const T );
+        void push_back( const T );
+        ArrayList& operator+=( const T );
+        ArrayList& operator+=( const ArrayList& );
+        template <typename U>
+        friend ArrayList<U>& operator+=( U, ArrayList<U>& );
+        T& operator[]( std::size_t index );
+        void insert( std::size_t index, const T );
+        void extract_index( std::size_t index );
+        void extract_value( T value );
+        template <typename U>
+            friend std::ostream& 
+                operator<<( std::ostream&, const ArrayList<U>& );
+
+        std::size_t getLength();
+        
+    private:
+        std::size_t capacity;
+        std::size_t count;
+
+        void expand();
+        void expand( size_t );
+        T* arr;
+};
 
 using namespace std;
+
+template <typename T>
+ArrayList<T>::ArrayList()
+{
+    this->capacity = 4;
+    count = 0;
+    arr = new T[capacity];
+}
 
 template <typename T>
 ArrayList<T>::ArrayList( size_t capacity )
 {
     this->capacity = capacity;
     count = 0;
-    arr = (T *)malloc(sizeof(T) * capacity);
+    arr = new T[capacity];
+}
+
+template <typename T>
+void copy( size_t count, T* dst, T* src)
+{
+    for (int i = 0; i < count; i++)
+    {
+        dst[i] = src[i];
+    }
 }
 
 template <typename T>
@@ -19,14 +70,20 @@ ArrayList<T>::ArrayList( const ArrayList<T>& l )
 {
     capacity = l.capacity;
     count = l.count;
-    arr = (T *)malloc(sizeof(T) * capacity);
-    memcpy(arr, l.arr, sizeof(T) * capacity);
+    arr = new T[capacity];
+    copy(count, arr, l.arr);
 }
 
 template <typename T>
 ArrayList<T>::~ArrayList()
 {
-    free(arr);
+    delete[] arr;
+}
+
+template <typename T>
+size_t ArrayList<T>::getLength()
+{
+    return count;
 }
 
 template <typename T>
@@ -34,8 +91,9 @@ ArrayList<T>& ArrayList<T>::operator=( const ArrayList<T>& l )
 {
     capacity = l.capacity;
     count = l.count;
-    arr = (T *)realloc(arr, sizeof(T) * capacity);
-    memcpy(arr, l.arr, sizeof(T) * capacity);
+    delete[] arr;
+    arr = new T[capacity];
+    copy(count, arr, l.arr);
     
     return *this;
 }
@@ -79,14 +137,20 @@ template <typename T>
 void ArrayList<T>::expand()
 {
     capacity *= 2;
-    arr = (T *)realloc(arr, capacity * sizeof(T));
+    T* tmp = new T[capacity];
+    copy(count, tmp, arr);
+    delete[] arr;
+    arr = tmp;
 }
 
 template <typename T>
 void ArrayList<T>::expand( size_t size )
 {
     capacity += size;
-    arr = (T *)realloc(arr, capacity * sizeof(T));
+    T* tmp= new T[capacity];
+    copy(count, tmp, arr);
+    delete[] arr;
+    arr = tmp;
 }
 
 template <typename T>
@@ -120,7 +184,10 @@ ArrayList<T>& ArrayList<T>::operator+=( const ArrayList<T>& l )
     {
         expand(l.count);
     }
-    memcpy(arr + count, l.arr, l.count * sizeof(T));
+    for (size_t i = 0; i < l.count; i++)
+    {
+        arr[count + i] = l.arr[i];
+    }
     count += l.count;
     return *this;
 }
@@ -151,8 +218,11 @@ void ArrayList<T>::push_forward( T obj )
     {
         expand();
     }
-    memmove(arr + 1, arr, (count++) * sizeof(T));
-    arr[0] = obj;
+    T* tmp = new T[capacity];
+    tmp[0] = obj;
+    copy(count++, tmp + 1, arr);
+    delete[] arr;
+    arr = tmp;
 }
 
 template <typename T>
@@ -162,8 +232,20 @@ void ArrayList<T>::insert( size_t index, T obj )
     {
         expand();
     }
-    memmove(arr + index + 1, arr + index, (count++ - index) * sizeof(T));
-    arr[index] = obj;
+    if (index >= count)
+    {
+        push_back(obj);
+    }
+    else
+    {
+        T* tmp = new T[capacity];
+        tmp[index] = obj;
+        copy(index, tmp, arr);
+        copy(count - index, tmp + index + 1, arr + index);
+        delete[] arr; 
+        arr = tmp;
+        count++;
+    }
 }
 
 template <typename T>
@@ -174,7 +256,7 @@ void ArrayList<T>::extract_index( size_t index )
         return;
     }
 
-    memmove(arr + index, arr + index + 1, (count-- - index - 1) * sizeof(T));
+    copy(count-- - index - 1, arr + index, arr + index + 1);
 }
 
 template <typename T>

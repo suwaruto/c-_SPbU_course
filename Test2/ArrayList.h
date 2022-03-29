@@ -1,32 +1,33 @@
 #pragma once
 
-#include <ostream>
-#include <cstdlib>
+#include "List.h"
 
 template <typename T> 
-class ArrayList
+class ArrayList : public List<T>
 {
     public:
         ArrayList( std::size_t capacity = 4 ); 
         ArrayList( const ArrayList& l );
         ~ArrayList();
-        ArrayList& operator=( const ArrayList& );
-        bool operator==( const ArrayList& ) const;
+        List<T>& operator=( const List<T>& );
+        bool operator==( const List<T>& ) const;
         void push_forward( const T );
         void push_back( const T );
-        ArrayList& operator+=( const T );
-        ArrayList& operator+=( const ArrayList& );
+        List<T>& operator+=( const T );
+        List<T>& operator+=( const List<T>& );
+        List<T>& operator+( const List<T>& ) const;
         template <typename U>
         friend ArrayList<U>& operator+=( U, ArrayList<U>& );
         T& operator[]( size_t index );
+        T& operator[]( size_t index ) const;
         void insert( size_t index, const T );
-        void extract_index( size_t index );
-        void extract_value( T value );
+        T extract_index( size_t index );
+        T extract_value( T value );
         template <typename U>
             friend std::ostream& 
                 operator<<( std::ostream&, const ArrayList<U>& );
 
-        std::size_t getLength();
+        std::size_t getLength() const;
         
     private:
         std::size_t capacity;
@@ -48,7 +49,16 @@ ArrayList<T>::ArrayList( size_t capacity )
 }
 
 template <typename T>
-void copy( size_t count, T* dst, T* src)
+void copy( size_t count, T* dst, const T* src )
+{
+    for (int i = 0; i < count; i++)
+    {
+        dst[i] = src[i];
+    }
+}
+
+template <typename T>
+void copy( size_t count, T* dst, const List<T>& src )
 {
     for (int i = 0; i < count; i++)
     {
@@ -62,7 +72,7 @@ ArrayList<T>::ArrayList( const ArrayList<T>& l )
     capacity = l.capacity;
     count = l.count;
     arr = new T[capacity];
-    copy(count, arr, l.arr);
+    copy(count, arr, l);
 }
 
 template <typename T>
@@ -72,34 +82,34 @@ ArrayList<T>::~ArrayList()
 }
 
 template <typename T>
-size_t ArrayList<T>::getLength()
+size_t ArrayList<T>::getLength() const
 {
     return count;
 }
 
 template <typename T>
-ArrayList<T>& ArrayList<T>::operator=( const ArrayList<T>& l )
+List<T>& ArrayList<T>::operator=( const List<T>& l )
 {
-    capacity = l.capacity;
-    count = l.count;
+    capacity = l.getLength();
+    count = l.getLength();
     delete[] arr;
     arr = new T[capacity];
-    copy(count, arr, l.arr);
+    copy(count, arr, l);
     
     return *this;
 }
 
 template <typename T>
-bool ArrayList<T>::operator==( const ArrayList<T>& l ) const
+bool ArrayList<T>::operator==( const List<T>& l ) const
 {
-    if (count != l.count)
+    if (count != l.getLength())
     {
         return false;
     }
 
     for (size_t ind = 0; ind < count; ind++)
     {
-        if (arr[ind] != l.arr[ind])
+        if (arr[ind] != l[ind])
         {
             return false;
         }
@@ -155,7 +165,7 @@ void ArrayList<T>::push_back( T obj )
 }
 
 template <typename T>
-ArrayList<T>& ArrayList<T>::operator+=( const T obj )
+List<T>& ArrayList<T>::operator+=( const T obj )
 {
     push_back(obj);
     return *this;
@@ -169,35 +179,52 @@ ArrayList<T>& operator+=( const T obj, ArrayList<T>& l )
 }
 
 template <typename T>
-ArrayList<T>& ArrayList<T>::operator+=( const ArrayList<T>& l )
+List<T>& ArrayList<T>::operator+=( const List<T>& l )
 {
-    if (count + l.count > capacity)
+    if (count + l.getLength() > capacity)
     {
-        expand(l.count);
+        expand(l.getLength());
     }
-    for (size_t i = 0; i < l.count; i++)
+    for (size_t i = 0; i < l.getLength(); i++)
     {
-        arr[count + i] = l.arr[i];
+        arr[count + i] = l[i];
     }
-    count += l.count;
+    count += l.getLength();
     return *this;
 }
 
 template <typename T>
-T& ArrayList<T>::operator[]( size_t index )
+List<T>& ArrayList<T>::operator+( const List<T>& l ) const
+{
+    static ArrayList<T> res = *this;
+    res += l;
+    return res;
+}
+
+template <typename T>
+T& ArrayList<T>::operator[]( size_t index ) 
 {
     if (index < 0)
     {
-        index = 0;
+        throw "Out of list bounds.";
     }
     if (index >= count)
     {
-        index = count;
-        if (count > capacity)
-        {
-            expand();
-        }
-        count++;
+        throw "Out of list bounds.";
+    }
+    return arr[index];
+}
+
+template <typename T>
+T& ArrayList<T>::operator[]( size_t index ) const
+{
+    if (index < 0)
+    {
+        throw "Out of list bounds.";
+    }
+    if (index >= count)
+    {
+        throw "Out of list bounds.";
     }
     return arr[index];
 }
@@ -240,30 +267,33 @@ void ArrayList<T>::insert( size_t index, T obj )
 }
 
 template <typename T>
-void ArrayList<T>::extract_index( size_t index )
+T ArrayList<T>::extract_index( size_t index )
 {
     if (index < 0 || index >= count)
     {
-        return;
+        throw "Out of list bounds.";
     }
 
+    T res = arr[index];
+
     copy(count-- - index - 1, arr + index, arr + index + 1);
+    return res;
 }
 
 template <typename T>
-void ArrayList<T>::extract_value( T value )
+T ArrayList<T>::extract_value( T value )
 {
     if (count <= 0)
     {
-        return;
+        throw "Search by value is not possible: list is empty.";
     }
 
     for (size_t index = 0; index < count; index++)
     {
         if (value == arr[index])
         {
-            extract_index(index);
-            return;
+            return extract_index(index);
         }
     }
+    throw "An element with value was not found."; 
 }

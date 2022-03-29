@@ -15,10 +15,12 @@ int main( void )
     cout << l1 << endl;
 
     l1.insert(3, 30);
+    cout << l1 << endl;
     l1.insert(3, 50);
     cout << l1 << endl;
 
     l1 += 1000;
+    cout << l1 << endl;
     l1.extract_index(2);
     cout << l1 << endl;
 

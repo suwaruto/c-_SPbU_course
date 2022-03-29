@@ -1,5 +1,69 @@
+#pragma once
+
 #include <cstddef>
 #include <ostream>
+
+#include "List.h"
+
+template <typename T>
+class LinkedList;
+
+template <typename T>
+class Node
+{
+    private:
+        T *data;
+        Node *next;
+        
+        Node(const T& data, Node *next = NULL);
+        Node& operator=( const Node& );
+        ~Node();
+
+    friend class LinkedList<T>;
+    template <typename U>
+    friend std::ostream& 
+        operator<<( std::ostream& stream, const LinkedList<U>& );
+};
+
+template <typename T>
+class LinkedList : public List<T>
+{
+    private:
+        Node<T> *head;
+        Node<T> *tail;
+        std::size_t length;
+
+        void clear();
+
+    public:
+        LinkedList();
+        LinkedList( const LinkedList& );
+        ~LinkedList();
+        bool operator==( const List<T>& ) const;
+        bool operator!=( const List<T>& ) const;
+        List<T>& operator=( const List<T>& );
+        List<T>& operator+=( const T data );
+        T& operator[]( std::size_t index );
+        T& operator[]( std::size_t index ) const;
+        List<T>& operator+( const List<T>& ) const;
+        List<T>& operator+=( const List<T>& );
+        void push_forward( const T );
+        void push_back( const T );
+        void insert( std::size_t index, const T );
+        T extract_head();
+        T extract_tail();
+        T extract_index( std::size_t ind );
+        T extract_value( T value );
+        std::size_t getLength() const;
+
+    template <typename U>
+    friend LinkedList<U>& operator+=( const U& data, const LinkedList<U>& );
+    template <typename U>
+    friend std::ostream& 
+        operator<<( std::ostream& stream, const LinkedList<U>& );
+};
+
+using namespace std;
 
 template <typename T>
 Node<T>::Node( const T& data, Node<T> *next )
@@ -72,10 +136,10 @@ void LinkedList<T>::clear()
 }
 
 template <typename T>
-LinkedList<T>& LinkedList<T>::operator=( const LinkedList<T>& l )
+List<T>& LinkedList<T>::operator=( const List<T>& l )
 {
     clear();
-    if (l.head == NULL)
+    if (l.getLength() == 0)
     {
         head = NULL;
         tail = NULL;
@@ -83,49 +147,48 @@ LinkedList<T>& LinkedList<T>::operator=( const LinkedList<T>& l )
         return *this;
     }
 
-    head = new Node<T>(l.head->data);
+    head = new Node<T>(l[0]);
     tail = head;
-    
-    for (Node<T> *ptr = l.head->next; ptr != NULL; ptr = ptr->next)
-    {
-        tail->next = new Node<T>(ptr->data);
-        tail = tail->next; 
-    } 
 
-    length = l.length;
+    for (size_t ind = 1; ind < l.getLength(); ind++)
+    {
+        tail->next = new Node<T>(l[ind]);
+        tail = tail->next;
+    }
+    
+    length = l.getLength();
 
     return *this;
 }
 
 template <typename T>
-bool LinkedList<T>::operator==( const LinkedList<T>& l ) const
+bool LinkedList<T>::operator==( const List<T>& l ) const
 {
-    if (l.length != length)
+    if (l.getLength() != length)
         return false;
 
     Node<T> *ptr1 = head;
-    Node<T> *ptr2 = l.head;
-
-    while (ptr1 != NULL)
+    
+    for (size_t ind = 0; ind < length; ind++)
     {
-        if (*(ptr1->data) != *(ptr2->data))
+        if (*(ptr1->data) != l[ind])
         {
             return false;
         }
         ptr1 = ptr1->next;
-        ptr2 = ptr2->next;
     }
+
     return true;
 }
 
 template <typename T>
-bool LinkedList<T>::operator!=( const LinkedList<T>& l ) const
+bool LinkedList<T>::operator!=( const List<T>& l ) const
 {
-    return !(l == *this);
+    return !(*this == l);
 }
 
 template <typename T>
-void LinkedList<T>::push_forward( const T& data )
+void LinkedList<T>::push_forward( const T data )
 {
     if (head == NULL)
     {
@@ -140,7 +203,7 @@ void LinkedList<T>::push_forward( const T& data )
 }
 
 template <typename T>
-void LinkedList<T>::push_back( const T& data )
+void LinkedList<T>::push_back( const T data )
 {
     Node<T> *ptr = head;
     head = new Node(data);
@@ -148,7 +211,7 @@ void LinkedList<T>::push_back( const T& data )
 }
 
 template <typename T>
-LinkedList<T>& LinkedList<T>::operator+=( const T& data )
+List<T>& LinkedList<T>::operator+=( const T data )
 {
     push_forward(data);
     return *this;
@@ -178,7 +241,23 @@ T& LinkedList<T>::operator[]( std::size_t index )
 }
 
 template <typename T>
-void LinkedList<T>::insert( const T& data, std::size_t index )
+T& LinkedList<T>::operator[]( std::size_t index ) const
+{
+    Node<T>* resptr = head;
+    for (std::size_t i = 0; i < index; i++)
+    {
+        if (resptr->next == NULL)
+        {
+            break;
+        }
+        resptr = resptr->next;
+    }
+
+    return *(resptr->data);
+}
+
+template <typename T>
+void LinkedList<T>::insert( std::size_t index, const T data )
 {
     if (head == NULL || index == 0)
     {
@@ -207,26 +286,23 @@ void LinkedList<T>::insert( const T& data, std::size_t index )
 }
 
 template <typename T>
-LinkedList<T> LinkedList<T>::operator+( const LinkedList<T>& l ) const
+List<T>& LinkedList<T>::operator+=( const List<T>& l )
 {
-    LinkedList<T> res = *this;
-    LinkedList<T> tmp = l;
-    res.tail->next = tmp.head;
-    res.tail = tmp.tail;
-    tmp.head = NULL;
-    res.length = this->length + tmp.length;
-    return res;
+    for (size_t ind = 0; ind < l.getLength(); ind++)
+    {
+        this->tail->next = new Node(l[ind]);
+        this->tail = this->tail->next;
+        this->length++;
+    }
+    return *this;
 }
 
 template <typename T>
-LinkedList<T>& LinkedList<T>::operator+=( const LinkedList<T>& l )
+List<T>& LinkedList<T>::operator+( const List<T>& l ) const
 {
-    LinkedList<T> tmp = l;
-    this->tail->next = tmp.head;
-    this->tail = tmp.tail;
-    tmp.head = NULL;
-    this->length += tmp.length;
-    return *this;
+    static LinkedList<T> res = *this;
+    res += l;
+    return res;
 }
 
 template <typename T>
@@ -271,7 +347,7 @@ T LinkedList<T>::extract_tail()
 }
 
 template <typename T>
-T LinkedList<T>::extract_ind( std::size_t index )
+T LinkedList<T>::extract_index( std::size_t index )
 {
     if (head == NULL)
     {
@@ -305,9 +381,43 @@ T LinkedList<T>::extract_ind( std::size_t index )
 }
 
 template <typename T>
+T LinkedList<T>::extract_value( T value )
+{
+    if (head == NULL)
+    {
+        throw "Can not extract an element by value: list is empty";
+    }
+
+    Node<T>* prev = head;
+    Node<T> *cur = head;
+
+    while (cur != NULL)
+    {
+        if (*(cur->data) == value)
+        {
+            prev->next = cur->next;
+            T data = *(cur->data);
+            delete cur;
+            length--;
+            return data;
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+
+    throw "An element with value wasn't found.";
+}
+
+template <typename T>
 LinkedList<T>::~LinkedList()
 {
     clear();
+}
+
+template <typename T>
+size_t LinkedList<T>::getLength() const
+{
+    return length;
 }
 
 template <typename T>
